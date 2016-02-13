@@ -79,22 +79,36 @@ exports.dependent = function(parents, func) {
 	return exports.merge(parents).derive(func);
 };
 
-exports.state = function(value) {
+exports.state = function(initial) {
+	let value = initial;
+
 	let result = makeNode([], function updateState() {
 		return [value];
 	});
 	result.set = function(newValue) {
 		value = newValue;
-		result._update([]);
+		result._update();
 		currentTransaction(result);
 	};
 	result.update = function(pattern) {
 		for (let key in pattern) {
 			value[key] = pattern[key];
 		}
-		result._update([]);
+		result._update();
 
 		currentTransaction(result);
+	};
+	return result;
+};
+
+exports.list = function(initial) {
+	let result = exports.state(initial);
+	result.updateElement = function(index, pattern) {
+		let element = result._values[0][index];
+		for (let key in pattern) {
+			element[key] = pattern[key];
+		}
+		result._update([]);
 	};
 	return result;
 };
@@ -117,7 +131,7 @@ function propagate(changedStates) {
 
 			if (nodeAvailable) {
 				if (nodeHot) {
-					node._update();
+					node._update(hot);
 					hot.add(node);
 				}
 				available.add(node);
