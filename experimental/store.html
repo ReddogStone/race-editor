@@ -38,7 +38,10 @@ function makeNode(parents, updateFunc) {
 		},
 
 		derive: function(func) {
-			return derive(node, func);
+			return makeDerive(node, func);
+		},
+		filter: function(func) {
+			return makeFilter(node, func);
 		}
 	};
 
@@ -47,10 +50,17 @@ function makeNode(parents, updateFunc) {
 	return node;
 }
 
-function derive(parent, func) {
-	var cached;
+function makeDerive(parent, func) {
 	return makeNode([parent], function deriveUpdate() {
 		return [func.apply(null, parent._values)];
+	});
+}
+
+function makeFilter(parent, func) {
+	return makeNode([parent], function filterUpdate() {
+		if (func.apply(null, parent._values)) {
+			return parent._values;
+		}
 	});
 }
 
@@ -63,7 +73,11 @@ exports.merge = function(parents) {
 		let parentValues = parents.map(parent => parent._values);
 		return parentValues.reduce((memo, next) => memo.concat(next));
 	});
-}
+};
+
+exports.dependent = function(parents, func) {
+	return exports.merge(parents).derive(func);
+};
 
 exports.state = function(value) {
 	let result = makeNode([], function updateState() {
@@ -84,65 +98,6 @@ exports.state = function(value) {
 	};
 	return result;
 };
-
-// function Node(initial, parents) {
-// 	this._values = initial;
-// 	this._parents = parents;
-
-// 	this._handlers = [];
-// }
-
-// Node.prototype._get = function(parentValues) {
-// 	return this._values;
-// };
-// Node.prototype._update = function() {
-// 	throw new Error('_update not implemented');
-// };
-
-// Node.prototype._notify = function(values) {
-// 	handlers.forEach(handler => handler.apply(null, values) );
-// };
-
-// Node.prototype.on = function(handler) {
-// 	handlers.push(handler);	
-// };
-// Node.prototype.derive = function(func) {
-// 	return new Derive(this._values, this);
-// };
-
-// function State(initial) {
-// 	Node.call(this, [initial], []);
-// }
-
-// State.prototype.set = function(value) {
-// 	this._values = [value];
-// 	currentTransaction(this, this._values);
-// };
-// State.prototype.update = function(pattern) {
-// 	let value = this._values[0];
-// 	for (let key in pattern) {
-// 		value[key] = pattern[key];
-// 	}
-// 	currentTransaction(this, [value]);
-// };
-
-// function Derive(initial, parent, func) {
-// 	Node.call(this, func.apply(null, initial), [parent]);
-// 	this._func = func;
-// }
-
-// Derive.prototype._update = function() {
-// 	this._values = this._func.apply(null, this._parents[0]._values);
-// };
-
-// function Merge(parents) {
-// 	Node.call(this, initial, parents);
-// 	this._func = func;
-// }
-
-// Derive.prototype._update = function() {
-// 	this._values = this._func.apply(null, this._parents[0]._values);
-// };
 
 function propagate(changedStates) {
 	let hot = changedStates;
@@ -195,13 +150,21 @@ let a = Store.state(1);
 let b = Store.state(2);
 let c = Store.state(3);
 let d = a.derive(x => 2 * x);
-let e = Store.merge(Store.merge(a, b).derive((a, b) => a + b), Store.merge(b, c).derive((b, c) => b + c)).derive((x, y) => x + y);
+let e = Store.dependent(
+	[
+		Store.dependent([a, b], (a, b) => a + b),
+		Store.dependent([b, c], (b, c) => b + c)
+	],
+	(x, y) => x + y
+);
+let f = Store.merge(a, b).filter((a, b) => a + b > 5);
 
 a.bind(x => console.log('A:', x));
 b.bind(x => console.log('B:', x));
 c.bind(x => console.log('C:', x));
 d.bind(x => console.log('D:', x));
 e.bind(function() { console.log('E:', Array.prototype.slice.call(arguments)); });
+f.bind(function() { console.log('F:', Array.prototype.slice.call(arguments)); });
 
 Store.transaction(function() {
 	a.set(2);
