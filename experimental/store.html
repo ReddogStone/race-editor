@@ -1,0 +1,162 @@
+<html>
+<body>
+<script>
+
+'use strict';
+
+var Store = {};
+(function(exports) {
+let internal = new Map();
+var currentTransaction = null;
+
+function derive(parent, func) {
+	var cached;
+	return makeNode(function deriveGetter(hot, available) {
+		let parentValues = available.get(parent);
+		if (parentValues) {
+			let result = {
+				values: cached
+			};
+			if (hot.has(parent)) {
+				result.values = cached = [func.apply(null, parentValues)];
+				result.hot = true;
+			}
+			return result;
+		}
+	});
+}
+
+exports.merge = function(externalParents) {
+	if (!Array.isArray(externalParents)) {
+		externalParents = Array.prototype.slice.call(arguments);
+	}
+	let parents = externalParents.map(e => internal.get(e));
+
+	return makeNode(function mergeGetter(hot, available) {
+		let parentValues = parents.map(parent => available.get(parent));
+		let meAvailable = parentValues.every(values => !!values);
+		let meHot = parents.some(parent => hot.has(parent));
+
+		if (meAvailable) {
+			return {
+				values: parentValues.reduce((memo, next) => memo.concat(next)),
+				hot: meHot
+			};
+		}
+	});
+}
+
+function makeNode(getter) {
+	let handlers = [];
+
+	let node = { 
+		get: getter,
+		notify: function(values) {
+			handlers.forEach(function(handler) {
+				handler.apply(null, values);
+			});
+		}
+	};
+
+	let result = {
+		on: function(handler) {
+			handlers.push(handler);
+		},
+		derive: function(func) {
+			return derive(node, func);
+		}
+	};
+	internal.set(result, node);
+	return result;
+}
+
+exports.state = function(initial) {
+	let value = initial;
+
+	let result = makeNode(function() {
+		return { values: [value] };
+	});
+	result.update = function(pattern) {
+		for (let key in pattern) {
+			value[key] = pattern[key];
+		}
+		currentTransaction(result, [value]);
+	};
+	result.set = function(newValue) {
+		value = newValue;
+		currentTransaction(result, [value]);
+	};
+	return result;
+};
+
+function propagate(valueMap) {
+	let hot = new Set(valueMap.keys());
+	let available = valueMap;
+	let unknown = Array.from(internal.values()).filter(node => !hot.has(node));
+
+	let active = true;
+	while (active) {
+		active = false;
+		for (let i = unknown.length - 1; i >= 0; i--) {
+			let node = unknown[i];
+
+			let result = node.get(hot, available);
+			if (result) {
+				available.set(node, result.values);
+				if (result.hot) {
+					hot.add(node);
+				}
+				unknown.splice(i, 1);
+				active = true;
+			}
+		}
+	}
+
+	available.forEach(function(values, node) {
+		node.notify(values);
+	});
+}
+
+exports.transaction = function(scope) {
+	if (currentTransaction) {
+		return scope();
+	}
+
+	let valueMap = new Map();
+	currentTransaction = function(external, value) {
+		let node = internal.get(external);
+		valueMap.set(node, value);
+	};
+	scope();
+	currentTransaction = null;
+
+	propagate(valueMap);
+};
+
+})(Store);
+
+let a = Store.state(1);
+let b = Store.state(2);
+let c = Store.state(3);
+let d = a.derive(x => 2 * x);
+let e = Store.merge(Store.merge(a, b).derive((a, b) => a + b), Store.merge(b, c).derive((b, c) => b + c)).derive((x, y) => x + y);
+
+a.on(x => console.log('A:', x));
+b.on(x => console.log('B:', x));
+c.on(x => console.log('C:', x));
+d.on(x => console.log('D:', x));
+e.on(function() { console.log('E:', Array.prototype.slice.call(arguments)); });
+
+Store.transaction(function() {
+	a.set(2);
+	b.set(4);
+	c.set(6);
+});
+
+Store.transaction(function() {
+	a.set(5);
+});
+
+</script>
+</body>
+</html>
