@@ -24,6 +24,10 @@ function makeNode(parents, updateFunc) {
 			node._values = update();
 		},
 
+		get values() {
+			return node._values;
+		},
+
 		bind: function(handler) {
 			handlers.push(handler);
 			if (node._values) {

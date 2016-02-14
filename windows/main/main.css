@@ -1,0 +1,30 @@
+.hbox {
+	display: flex;
+	flex-direction: row;
+	align-content: flex-start;
+}
+
+.vbox {
+	display: flex;
+	flex-direction: column;
+	align-content: flex-start;
+}
+
+.stretch {
+	display: flex;
+	flex-grow: 1;
+	height: 100%;
+}
+
+canvas {
+	display: flex;
+	width: 100%;
+	height: 100%;
+	margin: 0px;
+}
+
+body {
+	width: 100%;
+	height: 100%;
+	margin: 0px;
+}
