@@ -129,18 +129,6 @@ exports.state = function(initial) {
 	return result;
 };
 
-exports.list = function(initial) {
-	let result = exports.state(initial);
-	result.updateElement = function(index, pattern) {
-		let element = result._values[0][index];
-		for (let key in pattern) {
-			element[key] = pattern[key];
-		}
-		result._update([]);
-	};
-	return result;
-};
-
 exports.transaction = function(scope) {
 	if (currentTransaction) {
 		return scope();
