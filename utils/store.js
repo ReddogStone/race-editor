@@ -75,7 +75,6 @@ exports.dependent = function(sources, func, name) {
 					return true;
 				}
 			} else {
-				console.log('recalc:', name);
 				let values = sources.map(source => source._value);
 				let value = func(...values);
 				if (value !== undefined) {

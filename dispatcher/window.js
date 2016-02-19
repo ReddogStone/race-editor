@@ -3,15 +3,25 @@
 let Store = require('../utils/store');
 let contentSizeStore = require('../store/content-size');
 let scaleStore = require('../store/scale');
+let offsetStore = require('../store/offset');
 
 exports.setContentSize = function(width, height) {
-	Store.transaction(function() {
-		contentSizeStore.set({ width: width, height: height });
+	return Store.transaction(function(set) {
+		set(contentSizeStore, { width: width, height: height });
+	});
+};
+
+exports.move = function(delta) {
+	console.log('Move:', delta);
+	return Store.transaction(function(set) {
+		let offset = offsetStore._value;
+		let scale = scaleStore._value;
+		set(offsetStore, { x: offset.x + delta.x / scale, y: offset.y + delta.y / scale });
 	});
 };
 
 exports.changeScale = function(amount) {
-	Store.transaction(function() {
-		scaleStore.set(scaleStore.values[0] * Math.pow(1.1, amount));
+	return Store.transaction(function(set) {
+		set(scaleStore, scaleStore._value * Math.pow(1.1, amount));
 	});
 };

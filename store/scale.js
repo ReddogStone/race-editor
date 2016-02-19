@@ -2,4 +2,4 @@
 
 let Store = require('../utils/store');
 
-module.exports = Store.state(1);
+module.exports = Store.source(1, 'scale');
