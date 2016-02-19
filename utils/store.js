@@ -1,145 +1,113 @@
 'use strict';
 
-var nodes = [];
-var currentTransaction = null;
+const State = {
+	HOT: 'hot',
+	COLD: 'cold',
+	UNAVAILABLE: 'unavailable'
+};
 
-function makeNode(parents, updateFunc) {
-	let handlers = [];
-	let initial = update();
-
-	function update() {
-		let parentValues = parents.map(parent => parent._values);
-		if (parentValues.every(values => !!values)) {
-			let values = updateFunc(parentValues);
-		 	handlers.forEach(handler => handler.apply(null, values));
-		 	return values;
-		}
-	}
-
+function makeNode(initial, sources, name) {
 	let node = {
-		_values: initial,
-		_parents: parents,
-
-		_update: function() {
-			node._values = update();
+		_dependents: [],
+		_name: name,
+		_value: initial,
+		_add: function(node) {
+			this._dependents.push(node);
 		},
-
-		get values() {
-			return node._values;
-		},
-
-		bind: function(handler) {
-			handlers.push(handler);
-			if (node._values) {
-				handler.apply(null, node._values);
-			}
-		},
-
-		derive: function(func) {
-			return makeDerive(node, func);
-		},
-		filter: function(func) {
-			return makeFilter(node, func);
-		}
 	};
 
-	nodes.push(node);
+	sources.forEach(function(source) {
+		source._add(node);
+	});
 
 	return node;
 }
 
-function makeDerive(parent, func) {
-	return makeNode([parent], function deriveUpdate() {
-		return [func.apply(null, parent._values)];
+function propagate(changed) {
+	let states = new Map();
+	changed.forEach(function(source) {
+		states.set(source, State.HOT);
 	});
-}
 
-function makeFilter(parent, func) {
-	return makeNode([parent], function filterUpdate() {
-		if (func.apply(null, parent._values)) {
-			return parent._values;
-		}
-	});
-}
+	let result = new Set(changed);
 
-function propagate(changedStates) {
-	let hot = changedStates;
-	let available = new Set(changedStates);
-	let unknown = nodes.filter(node => !hot.has(node));
-
-	let active = true;
-	while (active) {
-		active = false;
-		for (let i = unknown.length - 1; i >= 0; i--) {
-			let node = unknown[i];
-
-			let parents = node._parents;
-
-			let nodeAvailable = parents.every(parent => available.has(parent));
-			let nodeHot = parents.some(parent => hot.has(parent));
-
-			if (nodeAvailable) {
-				if (nodeHot) {
-					node._update(hot);
-					hot.add(node);
-				}
-				available.add(node);
-
-				unknown.splice(i, 1);
-				active = true;
+	let fifo = Array.from(changed);
+	for (let i = 0; i < fifo.length; i++) {
+		fifo[i]._dependents.forEach(function(dependent) {
+			if (!result.has(dependent) && dependent._update(states)) {
+				result.add(dependent);
+				fifo.push(dependent);
 			}
-		}
+		});
 	}
+
+	return Array.from(result);
 }
 
-exports.merge = function(parents) {
-	if (!Array.isArray(parents)) {
-		parents = Array.prototype.slice.call(arguments);
-	}
-
-	return makeNode(parents, function mergeUpdate() {
-		let parentValues = parents.map(parent => parent._values);
-		return parentValues.reduce((memo, next) => memo.concat(next));
-	});
-};
-
-exports.dependent = function(parents, func) {
-	return exports.merge(parents).derive(func);
-};
-
-exports.state = function(initial) {
-	let value = initial;
-
-	let result = makeNode([], function updateState() {
-		return [value];
-	});
-	result.set = function(newValue) {
-		value = newValue;
-		result._update();
-		currentTransaction(result);
+exports.source = function(initial, name) {
+	let result = makeNode(initial, [], name);
+	result._set = function(value) {
+		result._value = value;
 	};
-	result.update = function(pattern) {
-		for (let key in pattern) {
-			value[key] = pattern[key];
+	result._update = function(states) {
+		if (!states.has(result)) {
+			states.set(result, State.COLD);
 		}
-		result._update();
-
-		currentTransaction(result);
+		return true;
 	};
 	return result;
 };
 
+exports.dependent = function(sources, func, name) {
+	let values = sources.map(source => source._value);
+	let initial = func(...values);
+
+	let result = makeNode(initial, sources, name);
+	result._update = function(states) {
+		if (states.has(result)) {
+			return states.get(result) !== State.UNAVAILABLE;
+		}
+
+		if (sources.every(source => source._update(states))) {
+			if ( sources.every(source => (states.get(source) === State.COLD)) ) {
+				if (result._value !== undefined) {
+					states.set(result, State.COLD);
+					return true;
+				}
+			} else {
+				console.log('recalc:', name);
+				let values = sources.map(source => source._value);
+				let value = func(...values);
+				if (value !== undefined) {
+					result._value = value;
+					states.set(result, State.HOT);
+					return true;
+				}
+			}
+		}
+
+		states.set(result, State.UNAVAILABLE);
+		return false;
+	};
+	return result;
+};
+
+let setter = null;
 exports.transaction = function(scope) {
-	if (currentTransaction) {
-		return scope();
+	if (setter) {
+		scope(setter);
+		return;
 	}
 
-	let changedStates = new Set();
-	currentTransaction = function(node) {
-		changedStates.add(node);
-	};
-	scope();
-	currentTransaction = null;
+	let changed = new Set();
 
-	propagate(changedStates);
+	setter = function(node, value) {
+		node._set(value);
+		changed.add(node);
+	};
+
+	scope(setter);
+	setter = null;
+
+	return propagate(changed);
 };
