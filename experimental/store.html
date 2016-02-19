@@ -6,6 +6,12 @@
 
 var Store = {};
 (function(exports) {
+	const State = {
+		HOT: 'hot',
+		COLD: 'cold',
+		UNAVAILABLE: 'unavailable'
+	};
+
 	function makeNode(initial, sources, name) {
 		let node = {
 			_dependents: [],
@@ -13,7 +19,7 @@ var Store = {};
 			_value: initial,
 			_add: function(node) {
 				this._dependents.push(node);
-			}
+			},
 		};
 
 		sources.forEach(function(source) {
@@ -24,34 +30,35 @@ var Store = {};
 	}
 
 	function propagate(changed) {
-		let available = new Set(changed);
-		let hot = new Set(changed);
-		let cold = new Set();
+		let states = new Map();
+		changed.forEach(function(source) {
+			states.set(source, State.HOT);
+		});
+
+		let result = new Set(changed);
 
 		let fifo = Array.from(changed);
 		for (let i = 0; i < fifo.length; i++) {
 			fifo[i]._dependents.forEach(function(dependent) {
-				if (available.has(dependent)) {
-					return hot.add(dependent);
-				}
-
-				if (dependent._update(available, cold)) {
-					hot.add(dependent);
+				if (!result.has(dependent) && dependent._update(states)) {
+					result.add(dependent);
 					fifo.push(dependent);
 				}
 			});
 		}
 
-		return hot;
+		return Array.from(result);
 	}
 
-	exports.state = function(initial, name) {
+	exports.source = function(initial, name) {
 		let result = makeNode(initial, [], name);
 		result._set = function(value) {
 			result._value = value;
 		};
-		result._update = function(available) {
-			available.add(result);
+		result._update = function(states) {
+			if (!states.has(result)) {
+				states.set(result, State.COLD);
+			}
 			return true;
 		};
 		return result;
@@ -62,19 +69,30 @@ var Store = {};
 		let initial = func(...values);
 
 		let result = makeNode(initial, sources, name);
-		result._update = function(available, cold) {
-			if (sources.every(source => !cold.has(source)) && sources.every(source => available.has(source) || source._update(available, cold))) {
-				let values = sources.map(source => source._value);
+		result._update = function(states) {
+			if (states.has(result)) {
+				return states.get(result) !== State.UNAVAILABLE;
+			}
 
-				let value = func(...values);
-				if (value !== undefined) {
-					result._value = value;
-					available.add(result);
-					return true;
+			if (sources.every(source => source._update(states))) {
+				if ( sources.every(source => (states.get(source) === State.COLD)) ) {
+					if (result._value !== undefined) {
+						states.set(result, State.COLD);
+						return true;
+					}
+				} else {
+					console.log('recalc:', name);
+					let values = sources.map(source => source._value);
+					let value = func(...values);
+					if (value !== undefined) {
+						result._value = value;
+						states.set(result, State.HOT);
+						return true;
+					}
 				}
 			}
 
-			cold.add(result);
+			states.set(result, State.UNAVAILABLE);
 			return false;
 		};
 		return result;
@@ -101,11 +119,12 @@ var Store = {};
 	};
 })(Store);
 
-let a = Store.state(1, 'a');
-let b = Store.state(2, 'b');
+let a = Store.source(1, 'a');
+let b = Store.source(2, 'b');
+let c = Store.source(3, 'c');
 
-let c = Store.dependent([a, b], (a, b) => (a > 2) ? a + b : undefined, 'c');
-let d = Store.dependent([a, c], (a, c) => a * c, 'd');
+let d = Store.dependent([a, b], (a, b) => (a > 2) ? a + b : undefined, 'd');
+let e = Store.dependent([c, d], (c, d) => c + d, 'e');
 
 function output(nodes) {
 	nodes.forEach(function(node) {
@@ -119,7 +138,11 @@ function trans(scope) {
 }
 
 trans(function(set) {
-	set(a, 2);
+	set(a, 10);
+});
+
+trans(function(set) {
+	set(c, 5);
 });
 
 trans(function(set) {
