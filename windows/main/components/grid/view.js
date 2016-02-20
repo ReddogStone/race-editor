@@ -31,17 +31,9 @@ module.exports = (canvas, eventSource) => handlers => {
 	let context = canvas.getContext('2d');
 
 	return {
-		display: function(contentSize, scale, offset) {
+		display: function(contentSize, scale, offset, gridSize) {
 			canvas.width = contentSize.x;
 			canvas.height = contentSize.y;
-
-			let gridSize = scale;
-			while (gridSize < 10) {
-				gridSize *= 10;
-			}
-			while (gridSize > 100) {
-				gridSize /= 10;
-			}
 
 			let start = vec.mod(vec.scale(offset, scale), gridSize);
 
