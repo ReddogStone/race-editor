@@ -8,6 +8,7 @@ let registry = new Map();
 module.exports = store => (adapter, view) => {
 	let action = func => (...params) => {
 		let changes = func(...params);
+
 		changes.forEach(function(change) {
 			let setter = registry.get(change);
 			if (setter) {

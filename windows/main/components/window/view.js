@@ -1,11 +1,11 @@
 'use strict';
 
-module.exports = handlers => {
-	let body = document.body;
-	
+const vec = require('../../../../utils/vector');
+
+module.exports = canvas => handlers => {
 	window.addEventListener('resize', function(event) {
-		handlers.setContentSize(body.clientWidth, body.clientHeight);
+		handlers.setContentSize(vec(canvas.clientWidth, canvas.clientHeight));
 	}, false);
 
-	handlers.setContentSize(body.clientWidth, body.clientHeight);
+	handlers.setContentSize(vec(canvas.clientWidth, canvas.clientHeight));
 };

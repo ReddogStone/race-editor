@@ -88,6 +88,7 @@ exports.dependent = function(sources, func, name) {
 		states.set(result, State.UNAVAILABLE);
 		return false;
 	};
+	result._sources = sources;
 	return result;
 };
 

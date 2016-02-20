@@ -4,8 +4,9 @@ let store = {};
 
 const Store = require('../../framework/store');
 
-const Component = require('../../framework/component')(store);
 const Model = require('../../framework/model')(store);
+const Binding = require('../../framework/binding')(store);
+const Component = require('../../framework/component')(store);
 
 function registerComponent(path, adapterParams, viewParams) {
 	let adapter = require(path + '/adapter')(...adapterParams);
@@ -25,7 +26,9 @@ function init() {
 	const workingSpaceModel = Model(require('../../model/working-space'));
 	const levelModel = Model(require('../../model/level'));
 
-	registerComponent('./components/window', [workingSpaceModel]);
+	Binding(require('../../bindings/visible'));
+
+	registerComponent('./components/window', [workingSpaceModel], [gridCanvas]);
 	registerComponent('./components/grid', [workingSpaceModel], [gridCanvas, objectCanvas]);
 	registerComponent('./components/object-display', [workingSpaceModel, levelModel], [gridCanvas, objectCanvas]);
 }

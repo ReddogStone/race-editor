@@ -11,13 +11,13 @@ module.exports = canvas => handlers => {
 	let context = canvas.getContext('2d');
 
 	return {
-		display: function(offset, scale, objects) {
+		display: function(offset, scale, visibleObjects) {
 			context.save();
 			context.scale(scale, scale);
 			context.translate(offset.x, offset.y);
 
-			objects.forEach(function(object) {
-				context.beginPath();
+			context.beginPath();
+			visibleObjects.forEach(function(object) {
 				context.arc(object.pos.x, object.pos.y, 50, 0, 2 * Math.PI);
 			});
 
