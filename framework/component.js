@@ -24,4 +24,8 @@ module.exports = function(adapter, view) {
 	adapter(wrappedView, function response(states, func) {
 		registry.set(Store.dependent(states, (...params) => params), func);
 	});
+
+	registry.forEach(function(setter, store) {
+		setter(...store._value);
+	});
 }

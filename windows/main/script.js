@@ -17,8 +17,12 @@ function init() {
 	window.$ = require('../../3rdparty/jquery-2.2.0');
 
 	const gridCanvas = $('#grid-canvas')[0];
-	const workingSpaceModel = Model(require('../../model/working-space'));
+	const objectCanvas = $('#object-canvas')[0];
 
-	registerComponent('./components/grid', [workingSpaceModel], [gridCanvas]);
+	const workingSpaceModel = Model(require('../../model/working-space'));
+	const levelModel = Model(require('../../model/level'));
+
 	registerComponent('./components/window', [workingSpaceModel]);
+	registerComponent('./components/grid', [workingSpaceModel], [gridCanvas, objectCanvas]);
+	registerComponent('./components/object-display', [workingSpaceModel, levelModel], [gridCanvas, objectCanvas]);
 }

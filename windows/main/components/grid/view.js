@@ -7,24 +7,24 @@ function getMousePos(canvas, event) {
 	return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
 
-module.exports = canvas => handlers => {
-	canvas.addEventListener('wheel', function(event) {
+module.exports = (canvas, eventSource) => handlers => {
+	eventSource.addEventListener('wheel', function(event) {
 		handlers.changeScale(event.wheelDelta / 120);
 	}, false);
 
 	let beginMove = null;
-	canvas.addEventListener('mousedown', function(event) {
-		beginMove = getMousePos(canvas, event);
+	eventSource.addEventListener('mousedown', function(event) {
+		beginMove = getMousePos(eventSource, event);
 	}, false);
-	canvas.addEventListener('mousemove', function(event) {
+	eventSource.addEventListener('mousemove', function(event) {
 		if (beginMove) {
-			let pos = getMousePos(canvas, event);
+			let pos = getMousePos(eventSource, event);
 			let delta = { x: pos.x - beginMove.x, y: pos.y - beginMove.y };
 			beginMove = pos;
 			handlers.move(delta);
 		}
 	}, false);
-	canvas.addEventListener('mouseup', function(event) {
+	eventSource.addEventListener('mouseup', function(event) {
 		beginMove = null;
 	}, false);
 
