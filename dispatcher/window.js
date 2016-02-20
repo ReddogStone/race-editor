@@ -12,7 +12,6 @@ exports.setContentSize = function(width, height) {
 };
 
 exports.move = function(delta) {
-	console.log('Move:', delta);
 	return Store.transaction(function(set) {
 		let offset = offsetStore._value;
 		let scale = scaleStore._value;

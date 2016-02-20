@@ -23,7 +23,7 @@ function makeNode(initial, sources, name) {
 	return node;
 }
 
-function propagate(changed) {
+exports.propagate = function(changed) {
 	let states = new Map();
 	changed.forEach(function(source) {
 		states.set(source, State.HOT);
@@ -108,5 +108,5 @@ exports.transaction = function(scope) {
 	scope(setter);
 	setter = null;
 
-	return propagate(changed);
+	return exports.propagate(changed);
 };

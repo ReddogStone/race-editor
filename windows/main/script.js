@@ -1,31 +1,24 @@
 'use strict';
 
-let Store = require('../../utils/store');
+const Store = require('../../framework/store');
+const Component = require('../../framework/component');
+const Model = require('../../framework/model');
 
-let registry = new Map();
-
-function component(scope) {
-	scope(
-		function bind(states, func) {
-			registry.set(Store.dependent(states, (...params) => params), func);
-		},
-		function action(func, ...params) {
-			let changes = func(...params);
-			changes.forEach(function(change) {
-				let setter = registry.get(change);
-				if (setter) {
-					setter(...change._value);
-				}
-			});
-		}
-	);
+function registerComponent(path, adapterParams, viewParams) {
+	let adapter = require(path + '/adapter')(...adapterParams);
+	let view = require(path + '/view');
+	if (viewParams) {
+		view = view(...viewParams);
+	}
+	Component(adapter, view);
 }
 
 function init() {
 	window.$ = require('../../3rdparty/jquery-2.2.0');
 
-	let gridCanvas = $('#grid-canvas')[0];
-	component(require('./components/grid')(gridCanvas));
+	const gridCanvas = $('#grid-canvas')[0];
+	const workingSpaceModel = Model(require('../../model/working-space'));
 
-	component(require('./components/window'));
+	registerComponent('./components/grid', [workingSpaceModel], [gridCanvas]);
+	registerComponent('./components/window', [workingSpaceModel]);
 }
