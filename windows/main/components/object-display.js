@@ -1,17 +1,17 @@
 'use strict';
 
-const vec = require('../../../../utils/vector');
+const vec = require('../../../utils/vector');
 
 function getMousePos(canvas, event) {
 	var rect = canvas.getBoundingClientRect();
 	return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
 
-module.exports = canvas => handlers => {
+module.exports = function(canvas) {
 	let context = canvas.getContext('2d');
 
 	return {
-		display: function(offset, scale, visibleObjects) {
+		displayObjects: function(offset, scale, visibleObjects) {
 			context.save();
 			context.scale(scale, scale);
 			context.translate(offset.x, offset.y);

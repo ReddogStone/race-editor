@@ -15,7 +15,7 @@ module.exports = {
 
 			return { scale: newScale, offset: newOffset };
 		},
-		move: (scale, offset) => delta => {
+		moveContent: (scale, offset) => delta => {
 			return { offset: vec.add(offset, vec.scale(delta, 1.0 / scale)) };
 		}
 	},

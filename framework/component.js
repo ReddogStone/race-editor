@@ -3,37 +3,40 @@
 const Store = require('./store');
 const parseArgs = require('../utils/arguments-parser');
 
-let registry = new Map();
+module.exports = function(storage, actions) {
+	let registry = new Map();
 
-module.exports = store => (adapter, view) => {
-	let action = func => (...params) => {
-		let changes = func(...params);
+	return function(view) {
+		for (let key in view) {
+			if (key === 'attach') {
+				let attach = view[key];
+				let storeNames = parseArgs(attach);
+				let storeAccessors = storeNames.map(storeName => () => storage[storeName]._value);
 
-		changes.forEach(function(change) {
-			let setter = registry.get(change);
-			if (setter) {
-				setter(...change._value);
+				let handler = attach(...storeAccessors);
+
+				let actionNames = parseArgs(handler);
+				let actionHandlers = actionNames.map(actionName => (...params) => {
+					let changes = actions[actionName](...params);
+					changes.forEach(function(change) {
+						let setter = registry.get(change);
+						if (setter) {
+							setter(...change._value);
+						}
+					});
+				});
+
+				handler(...actionHandlers);
+			} else {
+				let display = view[key];
+				let storeNames = parseArgs(display);
+				let sources = storeNames.map(storeName => storage[storeName]);
+				registry.set(Store.dependent(sources, (...params) => params, key), display);
 			}
-		});
-	}
-
-	let wrappedView = function(handlers) {
-		let wrappedHandlers = {};
-		for (let key in handlers) {
-			wrappedHandlers[key] = action(handlers[key]);
 		}
-		return view(wrappedHandlers);
+
+		registry.forEach(function(setter, source) {
+			setter(...source._value);
+		});
 	};
-
-	let bindings = adapter(wrappedView);
-	for (let name in bindings) {
-		let setter = bindings[name];
-		let argNames = parseArgs(setter);
-		let sources = argNames.map(argName => store[argName]);
-		registry.set(Store.dependent(sources, (...params) => params, name), setter);
-	}
-
-	registry.forEach(function(setter, source) {
-		setter(...source._value);
-	});
 }

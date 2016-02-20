@@ -3,31 +3,28 @@
 const Store = require('./store');
 const parseArgs = require('../utils/arguments-parser');
 
-module.exports = store => model => {
-	let result = {};
-
+module.exports = (storage, actions) => model => {
 	for (let key in model.data) {
-		store[key] = Store.source(model.data[key], key);
+		storage[key] = Store.source(model.data[key], key);
 	}
 
 	for (let key in model.actions) {
 		let action = model.actions[key];
-		let argNames = parseArgs(action);
-		result[key] = function(...params) {
+		let storeNames = parseArgs(action);
+
+		actions[key] = function(...params) {
 			let data = {};
 
-			let values = argNames.map(argName => store[argName]._value);
+			let values = storeNames.map(storeName => storage[storeName]._value);
 
 			let changes = action(...values)(...params);
 			let changedSources = [];
 			for (let key in changes) {
-				let source = store[key];
+				let source = storage[key];
 				source._set(changes[key]);
 				changedSources.push(source);
 			}
 			return Store.propagate(changedSources);
 		};
 	}
-
-	return result;
 };

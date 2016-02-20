@@ -1,21 +1,13 @@
 'use strict';
 
-let store = {};
+let storage = {};
+let actions = {};
 
 const Store = require('../../framework/store');
 
-const Model = require('../../framework/model')(store);
-const Binding = require('../../framework/binding')(store);
-const Component = require('../../framework/component')(store);
-
-function registerComponent(path, adapterParams, viewParams) {
-	let adapter = require(path + '/adapter')(...adapterParams);
-	let view = require(path + '/view');
-	if (viewParams) {
-		view = view(...viewParams);
-	}
-	Component(adapter, view);
-}
+const Model = require('../../framework/model')(storage, actions);
+const Binding = require('../../framework/binding')(storage);
+const Component = require('../../framework/component')(storage, actions);
 
 function init() {
 	window.$ = require('../../3rdparty/jquery-2.2.0');
@@ -23,13 +15,13 @@ function init() {
 	const gridCanvas = $('#grid-canvas')[0];
 	const objectCanvas = $('#object-canvas')[0];
 
-	const workingSpaceModel = Model(require('../../model/working-space'));
-	const levelModel = Model(require('../../model/level'));
+	Model(require('../../model/working-space'));
+	Model(require('../../model/level'));
 
 	Binding(require('../../bindings/visible'));
 	Binding(require('../../bindings/grid'));
 
-	registerComponent('./components/window', [workingSpaceModel], [gridCanvas]);
-	registerComponent('./components/grid', [workingSpaceModel], [gridCanvas, objectCanvas]);
-	registerComponent('./components/object-display', [workingSpaceModel, levelModel], [gridCanvas, objectCanvas]);
+	Component(require('./components/window')(gridCanvas));
+	Component(require('./components/grid')(gridCanvas, objectCanvas));
+	Component(require('./components/object-display')(gridCanvas));
 }
