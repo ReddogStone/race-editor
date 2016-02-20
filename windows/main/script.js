@@ -27,6 +27,7 @@ function init() {
 	const levelModel = Model(require('../../model/level'));
 
 	Binding(require('../../bindings/visible'));
+	Binding(require('../../bindings/grid'));
 
 	registerComponent('./components/window', [workingSpaceModel], [gridCanvas]);
 	registerComponent('./components/grid', [workingSpaceModel], [gridCanvas, objectCanvas]);

@@ -32,8 +32,8 @@ module.exports = (canvas, eventSource) => handlers => {
 
 	return {
 		display: function(contentSize, scale, offset) {
-			canvas.width = canvas.clientWidth;
-			canvas.height = canvas.clientHeight;
+			canvas.width = contentSize.x;
+			canvas.height = contentSize.y;
 
 			let gridSize = scale;
 			while (gridSize < 10) {
