@@ -9,7 +9,7 @@ function getMousePos(canvas, event) {
 
 module.exports = (canvas, eventSource) => handlers => {
 	eventSource.addEventListener('wheel', function(event) {
-		handlers.changeScale(event.wheelDelta / 120);
+		handlers.changeScale(event.wheelDelta / 120, getMousePos(eventSource, event));
 	}, false);
 
 	let beginMove = null;
