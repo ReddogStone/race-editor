@@ -5,5 +5,8 @@ module.exports = (workingSpaceModel) => (View, response) => {
 		changeScale: workingSpaceModel.changeScale,
 		move: workingSpaceModel.move,
 	});
-	response([workingSpaceModel.contentSize, workingSpaceModel.scale, workingSpaceModel.offset], view.display);
+
+	return {
+		displayGrid: view.display
+	};
 };

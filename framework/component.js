@@ -1,8 +1,11 @@
 'use strict';
 
+const Store = require('./store');
+const parseArgs = require('../utils/arguments-parser');
+
 let registry = new Map();
 
-module.exports = function(adapter, view) {
+module.exports = store => (adapter, view) => {
 	let action = func => (...params) => {
 		let changes = func(...params);
 		changes.forEach(function(change) {
@@ -21,11 +24,15 @@ module.exports = function(adapter, view) {
 		return view(wrappedHandlers);
 	};
 
-	adapter(wrappedView, function response(states, func) {
-		registry.set(Store.dependent(states, (...params) => params), func);
-	});
+	let bindings = adapter(wrappedView);
+	for (let name in bindings) {
+		let setter = bindings[name];
+		let argNames = parseArgs(setter);
+		let sources = argNames.map(argName => store[argName]);
+		registry.set(Store.dependent(sources, (...params) => params, name), setter);
+	}
 
-	registry.forEach(function(setter, store) {
-		setter(...store._value);
+	registry.forEach(function(setter, source) {
+		setter(...source._value);
 	});
 }

@@ -4,24 +4,19 @@ const vec = require('../utils/vector');
 
 const SCALE_STEP = 1.2;
 
-// center / scale - offset = center / newScale - newOffset
-// newOffset = center / newScale - center / scale + offset = center * (1 / newScale - 1 / scale) + offset
-
 module.exports = {
 	actions: {
-		setContentSize: data => value => {
+		setContentSize: () => value => {
 			return { contentSize: value };
 		},
-		changeScale: data => (amount, center) => {
-			let scale = data.scale;
-
+		changeScale: (scale, offset) => (amount, center) => {
 			let newScale = scale * Math.pow(SCALE_STEP, amount);
-			let newOffset = vec.add(vec.scale(center, (1 / newScale - 1 / scale)), data.offset);
+			let newOffset = vec.add(vec.scale(center, (1 / newScale - 1 / scale)), offset);
 
 			return { scale: newScale, offset: newOffset };
 		},
-		move: data => delta => {
-			return { offset: vec.add(data.offset, vec.scale(delta, 1.0 / data.scale)) };
+		move: (scale, offset) => delta => {
+			return { offset: vec.add(offset, vec.scale(delta, 1.0 / scale)) };
 		}
 	},
 	data: {

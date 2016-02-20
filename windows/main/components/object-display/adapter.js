@@ -1,7 +1,10 @@
 'use strict';
 
-module.exports = (workingSpaceModel, levelModel) => (View, response) => {
+module.exports = (workingSpaceModel, levelModel) => (View) => {
 	let view = View({
 	});
-	response([workingSpaceModel.offset, workingSpaceModel.scale, levelModel.objects], view.display);
+
+	return {
+		displayObjects: view.display
+	}
 };

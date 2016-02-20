@@ -1,8 +1,11 @@
 'use strict';
 
+let store = {};
+
 const Store = require('../../framework/store');
-const Component = require('../../framework/component');
-const Model = require('../../framework/model');
+
+const Component = require('../../framework/component')(store);
+const Model = require('../../framework/model')(store);
 
 function registerComponent(path, adapterParams, viewParams) {
 	let adapter = require(path + '/adapter')(...adapterParams);
