@@ -18,7 +18,7 @@ module.exports = function(canvas) {
 	let visibleObjects = [];
 
 	return {
-		attach: (highlightedObject) => (moveContent, moveObject, changeScale, setHighlighted) => {
+		attach: (scale, highlightedObject) => (moveContent, moveObject, changeScale, setHighlighted) => {
 			canvas.addEventListener('wheel', function(event) {
 				changeScale(event.wheelDelta / 120, getMousePos(canvas, event));
 			}, false);
@@ -31,12 +31,22 @@ module.exports = function(canvas) {
 				if (beginMove) {
 					let pos = getMousePos(canvas, event);
 					let delta = { x: pos.x - beginMove.x, y: pos.y - beginMove.y };
-					beginMove = pos;
 
+					let scaleValue = scale();
 					let highlighted = highlightedObject();
 					if (highlighted) {
-						moveObject(highlighted, delta);
+						let curPos = highlighted.pos;
+						let newPos = vec.add(curPos, vec.scale(delta, 1 / scaleValue));
+						let worldGridSize = gridSize / scaleValue;
+						newPos = vec.scale(vec.map(vec.scale(newPos, 1 / worldGridSize), Math.round), worldGridSize);
+						let usedDelta = vec.scale(vec.sub(newPos, curPos), scaleValue);
+
+						if (!vec.eq(usedDelta, vec(0, 0))) {
+							beginMove = vec.add(beginMove, usedDelta);
+							moveObject(highlighted, usedDelta);
+						}
 					} else {
+						beginMove = pos;
 						moveContent(delta);
 					}
 				} else {
