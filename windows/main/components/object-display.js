@@ -36,7 +36,7 @@ module.exports = function(canvas) {
 	}
 
 	return {
-		attach: (scale, highlightedObject) => (moveObject, setHighlighted) => {
+		attach: (highlightedObject) => (moveObject, setHighlighted) => {
 			let beginMove = null;
 			let dragged = null;
 			canvas.addEventListener('mousedown', function(event) {
@@ -51,7 +51,7 @@ module.exports = function(canvas) {
 					let delta = vec.sub(pos, beginMove);
 					beginMove = pos;
 
-					moveObject(dragged, vec.scale(delta, 1 / scale()));
+					moveObject(dragged, delta);
 				} else {
 					let point = getMousePos(canvas, event);
 					let highlighted = getHighlightedObject(point);
