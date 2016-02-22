@@ -11,11 +11,6 @@ function getMousePos(canvas, event) {
 	return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
 
-function getHighlighted(objects, point) {
-	let highlighted = objects.filter(object => rect.inside(object.boundingBox, point))[0];
-	return highlighted ? highlighted.object : null;
-}
-
 module.exports = function(canvas) {
 	let context = canvas.getContext('2d');
 
@@ -46,7 +41,7 @@ module.exports = function(canvas) {
 					}
 				} else {
 					let point = getMousePos(canvas, event);
-					setHighlighted(getHighlighted(visibleObjects, point));
+					setHighlighted(Objects.getHighlighted(visibleObjects, point));
 				}
 			}, false);
 			canvas.addEventListener('mouseup', function(event) {

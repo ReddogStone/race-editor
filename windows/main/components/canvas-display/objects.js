@@ -42,3 +42,8 @@ exports.calculateVisible = function(contentSize, scale, offset, objects) {
 		};
 	});
 };
+
+exports.getHighlighted = function(objects, point) {
+	let highlighted = objects.filter(object => rect.inside(object.boundingBox, point))[0];
+	return highlighted ? highlighted.object : null;
+};
