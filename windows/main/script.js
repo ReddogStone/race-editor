@@ -27,7 +27,6 @@ function init() {
 	Dispatcher(require('../../dispatcher/level'));
 	Dispatcher(require('../../dispatcher/editing'));
 
-	Component(require('./components/window')(gridCanvas));
-	Component(require('./components/grid')(gridCanvas, objectCanvas));
-	Component(require('./components/object-display')(objectCanvas));
+	Component(require('./components/window')(objectCanvas));
+	Component(require('./components/canvas-display')(objectCanvas));
 }
