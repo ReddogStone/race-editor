@@ -5,8 +5,9 @@ let actions = {};
 
 const Store = require('../../framework/store');
 
-const Model = require('../../framework/model')(storage, actions);
-const Binding = require('../../framework/binding')(storage);
+const Dispatcher = require('../../framework/dispatcher')(storage, actions);
+const Source = require('../../framework/source')(storage);
+const Dependent = require('../../framework/dependent')(storage);
 const Component = require('../../framework/component')(storage, actions);
 
 function init() {
@@ -15,13 +16,18 @@ function init() {
 	const gridCanvas = $('#grid-canvas')[0];
 	const objectCanvas = $('#object-canvas')[0];
 
-	Model(require('../../model/working-space'));
-	Model(require('../../model/level'));
+	Source(require('../../source/level'));
+	Source(require('../../source/working-space'));
+	Source(require('../../source/editing'));
 
-	Binding(require('../../bindings/visible'));
-	Binding(require('../../bindings/grid'));
+	Dependent(require('../../dependent/visible'));
+	Dependent(require('../../dependent/grid'));
+
+	Dispatcher(require('../../dispatcher/working-space'));
+	Dispatcher(require('../../dispatcher/level'));
+	Dispatcher(require('../../dispatcher/editing'));
 
 	Component(require('./components/window')(gridCanvas));
 	Component(require('./components/grid')(gridCanvas, objectCanvas));
-	Component(require('./components/object-display')(gridCanvas));
+	Component(require('./components/object-display')(objectCanvas));
 }

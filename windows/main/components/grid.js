@@ -11,14 +11,16 @@ module.exports = function(canvas, eventSource) {
 	let context = canvas.getContext('2d');
 
 	return {
-		attach: () => (moveContent, changeScale) => {
+		attach: (highlightedObject) => (moveContent, changeScale) => {
 			eventSource.addEventListener('wheel', function(event) {
 				changeScale(event.wheelDelta / 120, getMousePos(eventSource, event));
 			}, false);
 
 			let beginMove = null;
 			eventSource.addEventListener('mousedown', function(event) {
-				beginMove = getMousePos(eventSource, event);
+				if (!highlightedObject()) {
+					beginMove = getMousePos(eventSource, event);
+				}
 			}, false);
 			eventSource.addEventListener('mousemove', function(event) {
 				if (beginMove) {

@@ -17,7 +17,9 @@ module.exports = function(storage, actions) {
 
 				let actionNames = parseArgs(handler);
 				let actionHandlers = actionNames.map(actionName => (...params) => {
-					let changes = actions[actionName](...params);
+					let changedStates = actions[actionName](...params);
+					
+					let changes = Store.propagate(changedStates);
 					changes.forEach(function(change) {
 						let setter = registry.get(change);
 						if (setter) {
