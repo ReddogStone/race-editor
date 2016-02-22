@@ -3,6 +3,8 @@
 let storage = {};
 let actions = {};
 
+require('../../utils/math-utils');
+
 const Store = require('../../framework/store');
 
 const Dispatcher = require('../../framework/dispatcher')(storage, actions);
