@@ -29,6 +29,5 @@ function init() {
 	Dispatcher(require('../../dispatcher/level'));
 	Dispatcher(require('../../dispatcher/editing'));
 
-	Component(require('./components/window')(objectCanvas));
 	Component(require('./components/canvas-display')(objectCanvas));
 }

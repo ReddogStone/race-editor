@@ -17,9 +17,12 @@ module.exports = function(canvas) {
 	let gridGeometry = { size: 10, offset: vec(0, 0) };
 	let visibleObjects = new Map();
 	let highlighted = null;
+	let contentSize = vec(canvas.clientWidth, canvas.clientHeight);
 
 	function display() {
-		context.clearRect(0, 0, canvas.width, canvas.height);
+		canvas.width = contentSize.x;
+		canvas.height = contentSize.y;
+
 		Grid.display(context, gridGeometry);
 		Objects.display(context, visibleObjects, highlighted);
 	}
@@ -65,11 +68,13 @@ module.exports = function(canvas) {
 			canvas.addEventListener('mouseup', function(event) {
 				beginMove = null;
 			}, false);
-		},
-		displayCanvas: function(contentSize, scale, offset, objects) {
-			canvas.width = contentSize.x;
-			canvas.height = contentSize.y;
 
+			window.addEventListener('resize', function(event) {
+				contentSize = vec(canvas.clientWidth, canvas.clientHeight);
+				display();
+			}, false);
+		},
+		displayCanvas: function(scale, offset, objects) {
 			gridGeometry = Grid.calculateGeometry(scale, offset);
 			visibleObjects = Objects.calculateVisible(contentSize, scale, offset, objects);
 
