@@ -14,11 +14,18 @@ function getMousePos(canvas, event) {
 module.exports = function(canvas) {
 	let context = canvas.getContext('2d');
 
-	let gridSize = 10;
-	let visibleObjects = [];
+	let gridGeometry = { size: 10, offset: vec(0, 0) };
+	let visibleObjects = new Map();
+	let highlighted = null;
+
+	function display() {
+		context.clearRect(0, 0, canvas.width, canvas.height);
+		Grid.display(context, gridGeometry);
+		Objects.display(context, visibleObjects, highlighted);
+	}
 
 	return {
-		attach: (scale, highlightedObject) => (moveContent, moveObject, changeScale, setHighlighted) => {
+		attach: () => (moveContent, moveObject, changeScale) => {
 			canvas.addEventListener('wheel', function(event) {
 				changeScale(event.wheelDelta / 120, getMousePos(canvas, event));
 			}, false);
@@ -30,16 +37,13 @@ module.exports = function(canvas) {
 			canvas.addEventListener('mousemove', function(event) {
 				if (beginMove) {
 					let pos = getMousePos(canvas, event);
-					let delta = { x: pos.x - beginMove.x, y: pos.y - beginMove.y };
+					let delta = vec.sub(pos, beginMove);
 
-					let scaleValue = scale();
-					let highlighted = highlightedObject();
 					if (highlighted) {
-						let curPos = highlighted.pos;
-						let newPos = vec.add(curPos, vec.scale(delta, 1 / scaleValue));
-						let worldGridSize = gridSize / scaleValue;
-						newPos = vec.scale(vec.map(vec.scale(newPos, 1 / worldGridSize), Math.round), worldGridSize);
-						let usedDelta = vec.scale(vec.sub(newPos, curPos), scaleValue);
+						let displayed = visibleObjects.get(highlighted).displayed;
+						let curPos = displayed.pos;
+						let newPos = Grid.positionOnGrid(gridGeometry, vec.add(curPos, delta));
+						let usedDelta = vec.sub(newPos, curPos);
 
 						if (!vec.eq(usedDelta, vec(0, 0))) {
 							beginMove = vec.add(beginMove, usedDelta);
@@ -51,22 +55,25 @@ module.exports = function(canvas) {
 					}
 				} else {
 					let point = getMousePos(canvas, event);
-					setHighlighted(Objects.getHighlighted(visibleObjects, point));
+					let newHighlighted = Objects.getHighlighted(visibleObjects, point);
+					if (newHighlighted !== highlighted) {
+						highlighted = newHighlighted;
+						display();
+					}
 				}
 			}, false);
 			canvas.addEventListener('mouseup', function(event) {
 				beginMove = null;
 			}, false);
 		},
-		displayCanvas: function(contentSize, scale, offset, objects, highlightedObject) {
+		displayCanvas: function(contentSize, scale, offset, objects) {
 			canvas.width = contentSize.x;
 			canvas.height = contentSize.y;
 
-			gridSize = Grid.calculateSize(scale);
-			Grid.display(context, scale, offset, gridSize);
-
+			gridGeometry = Grid.calculateGeometry(scale, offset);
 			visibleObjects = Objects.calculateVisible(contentSize, scale, offset, objects);
-			Objects.display(context, visibleObjects, highlightedObject);
+
+			display();
 		}
 	};
 };

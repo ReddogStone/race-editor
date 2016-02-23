@@ -16,11 +16,11 @@ function displayObject(context, object, highlighted) {
 
 exports.display = function(context, visibleObjects, highlighted) {
 	let highlightedDisplayed = null;
-	visibleObjects.forEach(function(object) {
-		if (object.object === highlighted) {
-			highlightedDisplayed = object.displayed;
+	visibleObjects.forEach(function(visible, object) {
+		if (object === highlighted) {
+			highlightedDisplayed = visible.displayed;
 		} else {
-			displayObject(context, object.displayed, false);
+			displayObject(context, visible.displayed, false);
 		}
 	});
 
@@ -32,18 +32,21 @@ exports.display = function(context, visibleObjects, highlighted) {
 exports.calculateVisible = function(contentSize, scale, offset, objects) {
 	let visibleRect = rect(vec.neg(offset), vec.scale(contentSize, 1 / scale));
 	let visibleObjects = objects.filter(object => rect.inside(visibleRect, object.pos));
-	return visibleObjects.map(function(object) {
+	return new Map(visibleObjects.map(function(object) {
 		let pos = vec.scale(vec.add(object.pos, offset), scale);
 		let size = vec.scale(vec(100, 100), scale);
-		return {
-			object: object,
-			boundingBox: rect(vec.sub(pos, vec.scale(vec(50, 50), scale)), size),
-			displayed: { pos: pos, size: size }
-		};
-	});
+		let boundingBox = rect(vec.sub(pos, vec.scale(vec(50, 50), scale)), size);
+		return [object,	{ boundingBox: boundingBox, displayed: { pos: pos, size: size } }];
+	}));
 };
 
-exports.getHighlighted = function(objects, point) {
-	let highlighted = objects.filter(object => rect.inside(object.boundingBox, point))[0];
-	return highlighted ? highlighted.object : null;
+exports.getHighlighted = function(visibleObjects, point) {
+	for (let entry of visibleObjects) {
+		let object = entry[0];
+		let visible = entry[1];
+		if (rect.inside(visible.boundingBox, point)) {
+			return object;
+		}
+	}
+	return null;
 };
