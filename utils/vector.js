@@ -4,6 +4,10 @@ function vec(x, y) {
 	return { x: x, y: y };
 }
 
+vec.replicate = function(s) {
+	return vec(s, s);
+};
+
 vec.clone = function(v) {
 	return vec(v.x, v.y);
 }

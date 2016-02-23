@@ -3,15 +3,62 @@
 const vec = require('../../../../utils/vector');
 const rect = require('../../../../utils/rectangle');
 
+const ObjectTypes = require('../../../../enums/object-types');
+
+function objectPath(context, object) {
+	switch (object.type) {
+		case ObjectTypes.CIRCLE:
+			context.beginPath();
+			context.arc(object.pos.x, object.pos.y, object.radius, 0, 2 * Math.PI);
+			break;
+		case ObjectTypes.RECTANGLE:
+			context.beginPath();
+			context.rect(object.pos.x, object.pos.y, object.size.x, object.size.y);
+			break;
+	}
+}
+
 function displayObject(context, object, highlighted) {
-	context.beginPath();
-	context.arc(object.pos.x, object.pos.y, 0.5 * object.size.x, 0, 2 * Math.PI);
+	objectPath(context, object);
 
 	context.fillStyle = 'lightgray';
 	context.strokeStyle = highlighted ? 'blue' : 'black';
 	context.lineWidth = highlighted ? 4 : 2;
 	context.fill();
 	context.stroke();
+}
+
+function toDisplayPoint(offset, scale, point) {
+	return vec.scale(vec.add(point, offset), scale);
+}
+
+function toDisplayObject(offset, scale, object) {
+	switch (object.type) {
+		case ObjectTypes.CIRCLE:
+			return {
+				type: object.type,
+				pos: toDisplayPoint(offset, scale, object.pos),
+				radius: object.radius * scale
+			};
+
+		case ObjectTypes.RECTANGLE:
+			return {
+				type: object.type,
+				pos: toDisplayPoint(offset, scale, object.pos),
+				size: vec.scale(object.size, scale)
+			};
+	}
+}
+
+function getBoundingBox(displayed) {
+	switch (displayed.type) {
+		case ObjectTypes.CIRCLE:
+			let radiusVec = vec.replicate(displayed.radius);
+			return rect(vec.sub(displayed.pos, radiusVec), vec.scale(radiusVec, 2));
+
+		case ObjectTypes.RECTANGLE:
+			return rect(displayed.pos, displayed.size);
+	}
 }
 
 exports.display = function(context, visibleObjects, highlighted) {
@@ -33,10 +80,9 @@ exports.calculateVisible = function(contentSize, scale, offset, objects) {
 	let visibleRect = rect(vec.neg(offset), vec.scale(contentSize, 1 / scale));
 	let visibleObjects = objects.filter(object => rect.inside(visibleRect, object.pos));
 	return new Map(visibleObjects.map(function(object) {
-		let pos = vec.scale(vec.add(object.pos, offset), scale);
-		let size = vec.scale(vec(100, 100), scale);
-		let boundingBox = rect(vec.sub(pos, vec.scale(vec(50, 50), scale)), size);
-		return [object,	{ boundingBox: boundingBox, displayed: { pos: pos, size: size } }];
+		let displayed = toDisplayObject(offset, scale, object);
+		let boundingBox = getBoundingBox(displayed);
+		return [object,	{ boundingBox: boundingBox, displayed: displayed }];
 	}));
 };
 
